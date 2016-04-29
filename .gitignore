@@ -1,0 +1,13 @@
+*.png
+*.prcp
+*.csv
+*.rda
+*.Rhistory
+*.txt
+*.dbf
+*.kml
+*.prj
+*.shp
+*.shx
+R/pts.tif
+*.gz
