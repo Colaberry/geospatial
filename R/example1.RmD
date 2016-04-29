@@ -1,0 +1,142 @@
+---
+title: "Precipitation Spatial Analysis"
+author: "Tarun Reddy Aleti"
+date: "April 18, 2016"
+output: html_document
+---
+
+### Executive Summary
+- Using NOAA free open datasets trying to implement preliminary spatial data analysis using R
+- We will be using Precipitaion data [ftp://ftp.ncdc.noaa.gov/pub/data/normals/1981-2010/source-datasets/]
+- The data set consists of monthly average precipitation at every station every month from 1981 to 2010.
+- Whenever a station recording is missing then its replaced by -9999
+
+### Required Packages
+```{r, echo = TRUE, warning = FALSE, message = FALSE, results = 'hide'}
+library(sp)
+library(maptools)
+library(maps)
+library(rgdal)
+library(lattice)
+library(grid)
+library(RColorBrewer)
+library(googleVis)
+library(RgoogleMaps)
+library(sqldf)
+library(rworldmap)
+library(dismo)
+```
+
+### Data
+```{r, echo = TRUE, warning = FALSE, message = FALSE, results = 'hide'}
+stations <- read.fwf("ghcnd-stations.txt", widths = c(11, 9, 10, 7, 3, 31, 4, 4, 6, 14))
+colnames(stations) <- c("ID", "LATITUDE", "LONGITUDE", "ELEVATION", "STATE", "NAME",
+                        "GSNFLAG", "HCNFLAG", "WMOID", "METHOD")
+
+prcp <- read.fwf("mly-prcp-filled.txt", widths = c(11, 5,  6, 2, rep(c(5, 2), 11)))
+colnames(prcp) <- c("STNID", "YEAR", paste(c("VALUE", "FLAG"), rep(c(1:12), each = 2), sep = ""))
+
+data <- sqldf("SELECT s.*, p.*
+               FROM stations as s
+               INNER JOIN prcp as p on s.ID = p.STNID")
+```
+
+### Spatial Points and Graphics
+
+- For our analysis we shall be using data from Jan 2000 in Texas state
+
+```{r, echo = TRUE, warning = FALSE, message = FALSE}
+prcp_texas <- subset(data, data$STATE == " TX" & data$YEAR == "2000")
+prcp_texas <- prcp_texas[ ,c("LATITUDE", "LONGITUDE", "VALUE1")]
+prcp_texas$LATITUDE <- as.numeric(prcp_texas$LATITUDE)
+prcp_texas$LONGITUDE <- as.numeric(prcp_texas$LONGITUDE)
+coordinates(prcp_texas) <- c("LONGITUDE", "LATITUDE")
+crs.geo <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
+proj4string(prcp_texas) <- crs.geo
+summary(prcp_texas)
+```
+
+- Quickly plotting point data on a map
+
+```{r, echo = TRUE, warning = FALSE, message = FALSE}
+plot(prcp_texas, pch = 20, col = "steelblue")
+plot(coastsCoarse, add = T)
+```
+
+- Mapping vectorial data using gmap from dismo
+
+```{r, echo = TRUE, warning = FALSE, message = FALSE}
+prcp_texas_gbmap <- gmap(prcp_texas, type = "satellite")
+prcp_texas_merc <- Mercator(prcp_texas)
+plot(prcp_texas_gbmap)
+points(prcp_texas_merc, pch = 20, col = "red")
+
+prcp_texas_coords <- as.data.frame(coordinates(prcp_texas))  # retrieves coordinates 
+
+PlotOnStaticMap(lat = prcp_texas_coords$LATITUDE, lon = prcp_texas_coords$LONGITUDE, zoom = 5, cex = 1.4, pch = 19, col = "red", FUN = points,  size = c(640, 640), add = F)
+
+map.lim <- qbbox(prcp_texas_coords$LATITUDE, prcp_texas_coords$LONGITUDE, TYPE = "all") 
+
+mymap <- GetMap.bbox(map.lim$lonR, map.lim$latR, destfile = "gmap.png", maptype = "satellite")
+
+PlotOnStaticMap(mymap, lat = prcp_texas_coords$LATITUDE, lon = prcp_texas_coords$LONGITUDE, zoom = NULL, cex = 1.3, pch = 19, col = "red", FUN = points, add = F)
+```
+
+- Drawing Polygons and Polylines
+
+```{r, echo = TRUE, warning = FALSE, message = FALSE}
+#plot(prcp_texas_gbmap)
+#mypolygon <- drawPoly()
+#summary(mypolygon)
+```
+
+### Converting between formats, reading in, and saving spatial vector data
+
+#### Exporting KML (Google Earth)
+```{r, echo = TRUE, warning = FALSE, message = FALSE}
+writeOGR(prcp_texas, dsn = "locsgb.kml", layer = "locs2.gb", driver = "KML")
+```
+
+#### Reading KML
+- Save as Shapefile
+```{r, echo = TRUE, warning = FALSE, message = FALSE}
+newmap <- readOGR("locsgb.kml", layer = "locs2.gb")
+writePointsShape(prcp_texas, "locsgb")
+```
+
+- Read as Shapefile
+```{r, echo = TRUE, warning = FALSE, message = FALSE}
+gb.shape <- readShapePoints("locsgb.shp")
+plot(gb.shape)
+```
+
+
+### Changing projection of spatial vector data
+
+- Projecting point dataset: To illustrate, let's project the dataframe with coordinates that we obtained above:
+```{r, echo = TRUE, warning = FALSE, message = FALSE}
+summary(prcp_texas)
+```
+
+- The original coordinates are in lat lon format. Let's define the new desired projection: Lambert Azimuthal Equal Area in this case (look up parameters at http://spatialreference.org)
+
+```{r, echo = TRUE, warning = FALSE, message = FALSE}
+crs.laea <- CRS("+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +ellps=GRS80 +units=m +no_defs")
+prcp_texas_laea <- spTransform(prcp_texas, crs.laea)  # spTransform makes the projection
+```
+
+#### Projecting shapefile of countries
+
+```{r, echo = TRUE, warning = FALSE, message = FALSE}
+plot(countriesLow)  # countries map in geographical projection
+country.laea <- spTransform(countriesLow, crs.laea)
+plot(prcp_texas_laea, pch = 20, col = "steelblue")
+plot(country.laea, add = T)
+```
+
+- Define spatial limits for plotting
+```{r, echo = TRUE, warning = FALSE, message = FALSE}
+plot(prcp_texas_laea, pch = 20, col = "steelblue", xlim = c(1800000, 3900000), ylim = c(1e+06, 
+    3e+06))
+plot(country.laea, add = T)
+```

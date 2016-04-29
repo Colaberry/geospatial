@@ -1,0 +1,81 @@
+Run Spatial Analysis R codes using AWS instances - Notes1
+
+0. Install necessary software in computer
+Install EC2
+Install JAVA
+Install 7z
+Install AWSCLI
+
+1. Update User Variables in computer
+User_Variables:
+AWS_ACCESS_KEY
+AWS_SECRET_KEY
+EC2_URL
+PATH:
+%JAVA_HOME%\bin
+%EC2_HOME%\bin
+
+2. Update System_Variables in computer
+EC2_HOME
+JAVA_HOME
+Path:
+C:\Program Files\7-Zip\
+C:\Users\qaz\Desktop\SourceTree_DataScience\AWS
+C:\Program Files\Amazon\AWSCLI\
+
+3. Create New Instances
+
+ec2-run-instances ami-183a2b72 -n 1 --instance-type t2.micro -k key
+ec2-describe-instances > describe_instances.csv
+ec2-describe-spot-instance-requests > spot_instances.csv
+
+4. Initialize the Putty session for instances
+
+[cmdletbinding()]
+param (
+	[Parameter(Mandatory = $true, ValueFromPipeline=$true)]
+	[string[]] $InputArray
+)
+
+foreach ($i in $input) {
+	Write-Host $i
+    putty.exe ec2-user@$i -i C:\Users\qaz\Desktop\SourceTree_DataScience\AWS\Keys\key.ppk -t
+}
+
+5. Zip all the files to be sent to S3 in local computer
+
+[cmdletbinding()]
+param (
+	[Parameter(Mandatory = $true)]
+	[string] $AWSPath,
+	[Parameter(Mandatory = $true)]
+	[string] $rPath,
+	[Parameter(Mandatory = $true)]
+	[string] $Folder = "S3_Bucket",
+	[Parameter(Mandatory = $true)]
+	[string] $FileName = "S3_Zip"
+)
+
+$ExecutionPolicy = "Set-ExecutionPolicy RemoteSigned -Scope CurrentUser"
+$Rscript = "demo.R"
+
+rmdir -force -recurse $AWSPath\$Folder
+mkdir $AWSPath\$Folder
+copy $rPath\$Rscript $AWSPath\$Folder
+7z.exe a $AWSPath\$Folder\$FileName.zip $AWSPath\$Folder\*
+
+6. Send all the zip files to S3 from local computer
+
+[cmdletbinding()]
+param (
+	[Parameter(Mandatory = $true)]
+	[string] $AWSPath,
+	[Parameter(Mandatory = $true)]
+	[string] $Folder = "colaberry",
+	[Parameter(Mandatory = $true)]
+	[string] $FileName = "S3_Zip"
+)
+
+aws s3 rm --recursive s3://datasciencetarun/$Folder
+aws s3 mb s3://datasciencetarun/$Folder
+aws s3 cp $AWSPath\$Folder\$FileName.zip s3://spatialanalysiscolaberry/$Folder/$FileName.zip --acl public-read
