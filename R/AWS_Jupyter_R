@@ -1,0 +1,83 @@
+Install Jupyter with Python3 and R-Kernel
+
+1. Install a version of conda
+wget https://3230d63b5fc54e62148e-c95ac804525aac4b6dba79b00b39d1d3.ssl.cf1.rackcdn.com/Anaconda2-2.4.1-Linux-x86_64.sh
+bash Anaconda2-2.4.1-Linux-x86_64.sh
+source .bashrc
+
+2. Update conda to latest version and Install Python 3
+conda update conda
+conda create --name snowflakes biopython
+conda create --name bunnies python=3 astroid babel
+conda create --name snakes python=3
+conda create -n py35 python=3.5 anaconda
+source activate py35
+
+3. Create Password for Ipython login
+ipython
+In [1]:from IPython.lib import passwd
+In [2]:passwd()
+In [3]:exit
+## Save the key given in Step 2
+
+4. Configuring Jupyter 
+jupyter notebook --generate-config
+mkdir certs
+cd certs
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:1024 -keyout mycert.pem -out mycert.pem
+cd ~/.jupyter/
+vi jupyter_notebook_config.py
+
+# Press i to insert
+# Copy following lines of code in insert box
+c = get_config()
+c.IPKernelApp.pylab = 'inline' 
+c.NotebookApp.certfile = u'/home/ubuntu/certs/mycert.pem' #### Cross check the path change ubuntu to username
+c.NotebookApp.ip = '*'
+c.NotebookApp.open_browser = False 
+c.NotebookApp.password = u'sha1:68c136a5b064...'  #### Insert the key we got from password (Step 3)
+c.NotebookApp.port = 8888"
+# Press Escape
+:wq (saves and quits the editor)
+cd ..
+
+5. Installing Prerequisites for R Kernel  
+sudo su
+wget http://download.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
+rpm -ivh epel-release-6-8.noarch.rpm
+yum install -y uuid-devel
+yum install -y pkgconfig
+yum install -y libtool
+yum install -y gcc-c++
+wget http://download.zeromq.org/zeromq-4.0.3.tar.gz
+tar xzvf zeromq-4.0.3.tar.gz
+cd zeromq-4.0.3
+./configure
+make
+make install
+echo /usr/local/lib > /etc/ld.so.conf.d/local.conf
+ldconfig 
+pip install pyzmq
+cd ..
+
+6. Installing R Kernel
+Open R
+install.packages(c('rzmq','repr','IRkernel','IRdisplay'),
+                 repos = c('http://irkernel.github.io/', getOption('repos')))
+r <- getOption('repos')
+r$IRkernel <- 'http://irkernel.github.io/'
+options(repos = r)
+
+IRkernel::installspec()		 
+				 
+7. Copying Files from S3 the Notebook Folder
+cd ~
+mkdir Notebooks
+cd Notebooks
+wget https://
+
+8. Run Jupyter
+source activate py35 (makes sure that Python 3 runs when we open Jupyter)
+jupyter notebook
+#### Use https://IPAddress:8888 to open a browser portal
+Save the file directly into local directory or can be downloaded and put back in S3
