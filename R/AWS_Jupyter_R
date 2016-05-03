@@ -11,7 +11,6 @@ conda create --name snowflakes biopython
 conda create --name bunnies python=3 astroid babel
 conda create --name snakes python=3
 conda create -n py35 python=3.5 anaconda
-source activate py35
 
 3. Create Password for Ipython login
 ipython
@@ -60,7 +59,11 @@ ldconfig
 pip install pyzmq
 cd ..
 
+
 6. Installing R Kernel
+exit
+source activate py35 (makes sure that Python 3 runs when we open Jupyter)
+
 Open R
 install.packages(c('rzmq','repr','IRkernel','IRdisplay'),
                  repos = c('http://irkernel.github.io/', getOption('repos')))
@@ -77,7 +80,6 @@ cd Notebooks
 wget https://
 
 8. Run Jupyter
-source activate py35 (makes sure that Python 3 runs when we open Jupyter)
 jupyter notebook
 #### Use https://IPAddress:8888 to open a browser portal
 Save the file directly into local directory or can be downloaded and put back in S3
