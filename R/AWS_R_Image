@@ -1,4 +1,4 @@
-Run Spatial Analysis R codes using AWS instances - Notes2
+sudo yum update
 sudo su
 yum groupinstall "Development tools"
 
