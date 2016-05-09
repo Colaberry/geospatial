@@ -1,0 +1,29 @@
+Run Spatial Analysis R codes using AWS instances - Notes2
+
+0. Upload all the datasets that we need into AWS S3 Bucket
+-- Make sure your AWS instances will have access to files
+
+1. Create a new instance using AMI
+ 
+2. Login to the instance using Putty again 
+(Note: While creating instance add 8787 port)
+
+3. Change user to Super User
+sudo su
+
+4. Change the directory to R directory
+cd ../ruser
+
+5. Download the data from S3 files
+wget https://s3-us-west-2.amazonaws.com/spatialanalysiscolaberry/ghcnd-stations.txt
+wget https://s3-us-west-2.amazonaws.com/spatialanalysiscolaberry/mly-prcp-filled.txt
+
+6. Run RStudio in Local Broswer
+IPaddress:PortNumber
+
+7. Login to RStudio with username and password we gave while installing.
+
+8. Run R codes from the GUI
+
+9. Copy the output data sets to local directory or S3
+aws s3 cp example.html s3://spatialanalysiscolaberry/example.html --acl public-read
